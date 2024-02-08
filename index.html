@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Document</title>
+    </head>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=Bakbak+One&display=swap");
+
+        body {
+            overflow: hidden;
+            background: black;
+            width: 100%;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -o-user-select: none;
+            user-select: none;
+        }
+
+        #foreground {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            width: 50%;
+            margin-top: 300px;
+        }
+
+        #particle {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            border-style: solid;
+            border-width: 3px;
+            position: absolute;
+            bottom: -10%;
+            left: -10%;
+            z-index: 999;
+            opacity: 1;
+        }
+
+        #projectile {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border-style: solid;
+            border-width: 5px;
+            position: absolute;
+            bottom: -10%;
+            left: -10%;
+            z-index: 999;
+            opacity: 1;
+        }
+
+        #note {
+            color: white;
+            font-size: 3px;
+            text-align: center;
+            padding-top: 200px;
+        }
+
+        #name {
+            color: white;
+            font-size: 3px;
+            text-align: center;
+        }
+
+        /*
+.title{
+  color: #F08080;
+  font-family: 'Bakbak One', cursive;
+  font-size: 40px;
+  text-align: center;
+  padding-top: 170px;
+}
+.title1{
+  display:inline-block;
+}
+.title2{
+  display:inline-block;
+  color: #98FB98;
+}
+*/
+    </style>
+
+    <script>
+        // constructors for firework particles
+        function Particle(
+            posX,
+            posY,
+            velocityX,
+            velocityY,
+            gravity,
+            lifeTime,
+            color,
+            element
+        ) {
+            this.posX = posX;
+            this.posY = posY;
+            this.velocityX = velocityX;
+            this.velocityY = velocityY;
+            this.gravity = gravity;
+            this.element = element;
+            this.Initialize = function () {
+                element.style.borderColor = color;
+                element.style.left = posX * window.innerWidth + "px";
+                element.style.bottom = posY * window.innerHeight + "px";
+            };
+            this.Move = function () {
+                this.Initialize();
+                var life = lifeTime;
+                element.style.opacity = 1;
+                var moveRoutine = setInterval(function () {
+                    if (life > 0) {
+                        var currPosX =
+                            window
+                                .getComputedStyle(element)
+                                .getPropertyValue("left")
+                                .replace("px", "") / window.innerWidth;
+                        var currPosY =
+                            window
+                                .getComputedStyle(element)
+                                .getPropertyValue("bottom")
+                                .replace("px", "") / window.innerHeight;
+                        element.style.left =
+                            (currPosX + velocityX) * window.innerWidth + "px";
+                        element.style.bottom =
+                            (currPosY + velocityY) * window.innerHeight + "px";
+                        element.style.opacity -= 10 / lifeTime;
+                        life -= 10;
+                        velocityY -= gravity;
+                    } else {
+                        element.remove();
+                        clearInterval(moveRoutine);
+                    }
+                }, 10);
+            };
+        }
+
+        // constructors for firework projectile
+        function Projectile(
+            targetX,
+            targetY,
+            velocity,
+            gravity,
+            explosionForce,
+            particleQuantity,
+            lifeTime,
+            color,
+            element
+        ) {
+            this.targetX = targetX;
+            this.targetY = targetY;
+            this.force = explosionForce;
+            this.particleQuantity = particleQuantity;
+            this.color = color;
+            this.Initialize = function () {
+                element.style.borderColor = color;
+                element.style.left = targetX * window.innerWidth + "px";
+                element.style.bottom = "0px";
+            };
+            this.Fire = function () {
+                this.Initialize();
+                var moveRoutine = setInterval(function () {
+                    var currPosX =
+                        window
+                            .getComputedStyle(element)
+                            .getPropertyValue("left")
+                            .replace("px", "") / window.innerWidth;
+                    var currPosY =
+                        window
+                            .getComputedStyle(element)
+                            .getPropertyValue("bottom")
+                            .replace("px", "") / window.innerHeight;
+                    if (currPosY <= targetY && velocity > 0) {
+                        element.style.bottom =
+                            (currPosY + velocity) * window.innerHeight + "px";
+                        velocity -= gravity;
+                    } else {
+                        // destroy the projectile
+                        element.remove();
+                        // create a circle of particles clones
+                        var fullCirRadian = 6.283185;
+                        for (var i = 0; i < particleQuantity; i++) {
+                            var cloneP = document
+                                .querySelector("#particle")
+                                .cloneNode(true);
+                            document
+                                .querySelector("#particleParent")
+                                .appendChild(cloneP);
+                            var radians =
+                                (i * fullCirRadian) / particleQuantity;
+                            var vX = GetCircleX(
+                                radians,
+                                explosionForce * Math.random()
+                            );
+                            var vY = GetCircleY(
+                                radians,
+                                explosionForce * Math.random() +
+                                    0.6 * explosionForce
+                            );
+                            var particle = new Particle(
+                                currPosX,
+                                currPosY,
+                                vX,
+                                vY,
+                                gravity,
+                                lifeTime,
+                                color,
+                                cloneP
+                            );
+                            particle.Move();
+                        }
+                        clearInterval(moveRoutine);
+                    }
+                }, 10);
+            };
+        }
+
+        function GetCircleX(radians, radius) {
+            return Math.cos(radians) * radius;
+        }
+        function GetCircleY(radians, radius) {
+            return Math.sin(radians) * radius;
+        }
+        function GetIntRange(min, max) {
+            return min + Math.floor(Math.random() * max) + 1;
+        }
+        function GetFloatRange(min, max) {
+            return min + Math.random() * max;
+        }
+
+        // fire event
+        let projectiles = document.querySelector("#projectileParent");
+        let maxProjectileNum = 8;
+        let velocity = 0.006;
+        let gravity = 0.00002;
+        let explosionForce = 0.002;
+        let explosionParticleNumRange = [5, 25];
+        let lifeTime = 1500;
+        document.addEventListener("click", (event) => {
+            if (
+                document.querySelector("#projectileParent").childNodes.length <
+                maxProjectileNum
+            ) {
+                var targetX = event.clientX / window.innerWidth;
+                var targetY = 1 - event.clientY / window.innerHeight;
+                var randomColor =
+                    "#" + Math.floor(Math.random() * 16777215).toString(16);
+                var clonePJ = document
+                    .querySelector("#projectile")
+                    .cloneNode(true);
+                projectiles.appendChild(clonePJ);
+                var pj = new Projectile(
+                    targetX,
+                    targetY,
+                    velocity * GetFloatRange(0.6, 0.8),
+                    gravity,
+                    explosionForce,
+                    GetIntRange(
+                        explosionParticleNumRange[0],
+                        explosionParticleNumRange[1]
+                    ),
+                    lifeTime,
+                    randomColor,
+                    clonePJ
+                );
+                pj.Fire();
+            }
+        });
+    </script>
+    <body>
+        <!--
+<div class="title">
+  <h1 class="title1">Happy&nbsp;</h1>
+  <h1 class="title2">New&nbsp;</h1>
+  <h1 class="title1">Year&nbsp;</h1>
+  <h1 class="title2">2022!</h1>
+</div>
+-->
+        <img
+            src="https://assets.codepen.io/6909912/%E6%9C%AA%E5%91%BD%E5%90%8D%E4%BD%9C%E5%93%81_1.png"
+            id="foreground"
+            alt="title"
+        />
+
+        <div class="backgroundImg"></div>
+
+        <div id="projectileParent"></div>
+        <div id="particleParent"></div>
+
+        <div id="projectile"></div>
+        <div id="particle"></div>
+
+        <div class="begin">
+            <p id="note">Note: Please click anywhere on the screen :)</p>
+            <p id="name">©Yiran & Gary</p>
+        </div>
+    </body>
+</html>
